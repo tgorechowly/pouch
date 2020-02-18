@@ -17,6 +17,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\HasOneOrMany;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Support\Arr;
 use InvalidArgumentException;
 
 /**
@@ -344,7 +345,7 @@ class EloquentRepository implements Repository
 			return null;
 		}
 
-		return array_get($input, (new $model)->getKeyName());
+		return Arr::get($input, (new $model)->getKeyName());
 	}
 
 	/**
@@ -363,7 +364,7 @@ class EloquentRepository implements Repository
 		$instance_model   = get_class($instance);
 		$safe_instance    = new $instance_model;
 
-		$input           = ($safe_instance->getIncrementing()) ? array_except($input, [$instance->getKeyName()]) :
+		$input           = ($safe_instance->getIncrementing()) ? Arr::except($input, [$instance->getKeyName()]) :
 			$input;
 		$access_compiler = $this->accessControl();
 
