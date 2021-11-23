@@ -1,15 +1,15 @@
 <?php
 
-namespace Fuzz\MagicBox\Contracts;
+namespace Koala\Pouch\Contracts;
 
 use Illuminate\Routing\Route;
 
 /**
  * Interface ModelResolver
  *
- * A ModelResolver determines which MagicBoxResource is being worked on via a Route.
+ * A ModelResolver determines which PouchResource is being worked on via a Route.
  *
- * @package Fuzz\MagicBox\Contracts
+ * @package Koala\Pouch\Contracts
  */
 interface ModelResolver
 {
