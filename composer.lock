@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "b067f2b251bbe9eb9e344b6ae59db76e",
+    "content-hash": "2bbe5c46fd41c21bb18b38e78f2712dd",
     "packages": [
         {
             "name": "brick/math",
@@ -4966,7 +4966,11 @@
                     "type": "github"
                 }
             ],
+<<<<<<< HEAD
             "time": "2021-11-15T18:06:47+00:00"
+=======
+            "time": "2021-10-05T08:12:17+00:00"
+>>>>>>> ad9be3f15dcb1d6c5fe18b30652f3ab434d15688
         },
         {
             "name": "guzzlehttp/psr7",
