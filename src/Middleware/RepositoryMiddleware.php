@@ -1,18 +1,18 @@
 <?php
 
-namespace Fuzz\MagicBox\Middleware;
+namespace Koala\Pouch\Middleware;
 
-use Fuzz\MagicBox\Facades\ModelResolver;
+use Koala\Pouch\Facades\ModelResolver;
 use Illuminate\Http\Request;
-use Fuzz\MagicBox\EloquentRepository;
-use Fuzz\MagicBox\Contracts\Repository;
+use Koala\Pouch\EloquentRepository;
+use Koala\Pouch\Contracts\Repository;
 
 /**
  * Class RepositoryMiddleware
  *
  * Responsible for accepting a request and building a Repository for the appropriate class.
  *
- * @package Fuzz\MagicBox\Middleware
+ * @package Koala\Pouch\Middleware
  */
 class RepositoryMiddleware
 {
@@ -35,7 +35,7 @@ class RepositoryMiddleware
      *
      * @param \Illuminate\Http\Request $request
      *
-     * @return \Fuzz\MagicBox\Contracts\Repository|\Fuzz\MagicBox\EloquentRepository
+     * @return \Koala\Pouch\Contracts\Repository|\Koala\Pouch\EloquentRepository
      */
     public function buildRepository(Request $request): EloquentRepository
     {
@@ -72,7 +72,7 @@ class RepositoryMiddleware
             ->setEagerLoads((array) $request->get('include'))
             ->setAggregate((array) $request->get('aggregate'));
 
-        $repository->accessControl()->setDepthRestriction(config('magic-box.eager_load_depth'));
+        $repository->accessControl()->setDepthRestriction(config('pouch.eager_load_depth'));
 
         return $repository;
     }
