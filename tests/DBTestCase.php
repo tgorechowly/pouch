@@ -2,22 +2,38 @@
 
 namespace Koala\Pouch\Tests;
 
-use League\Flysystem\Config;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 
 abstract class DBTestCase extends TestCase
 {
-    protected $artisan;
+    use RefreshDatabase {
+        RefreshDatabase::migrateFreshUsing as parentMigrateFreshUsing;
+        RefreshDatabase::migrateUsing as parentMigrateUsing;
+    }
+    public $mockConsoleOutput = false;
 
-    public function setUp(): void
+    protected function migrateUsing(): array
     {
-        parent::setUp();
-
-        $this->artisan = $this->app->make('Illuminate\Contracts\Console\Kernel');
-        $this->artisan->call(
-            'migrate',
+        return array_merge(
+            $this->parentMigrateUsing(),
             [
                 '--database' => 'testbench',
-                '--path'     => '../../../../tests/migrations',
+                '--path'     => __DIR__ . '/migrations',
+                '--realpath' => true
+            ]
+        );
+    }
+
+    protected function migrateFreshUsing(): array
+    {
+        $migrationPath = __DIR__ . '/migrations';
+
+        return array_merge(
+            $this->parentMigrateFreshUsing(),
+            [
+                '--database' => 'testbench',
+                '--path'     => $migrationPath,
+                '--realpath' => true
             ]
         );
     }

@@ -2,6 +2,7 @@
 
 namespace Koala\Pouch\Tests;
 
+use Illuminate\Support\Facades\Artisan;
 use Koala\Pouch\Contracts\AccessControl;
 use Koala\Pouch\Tests\Models\Tag;
 use Koala\Pouch\Tests\Seeds\FilterDataSeeder;
@@ -38,7 +39,7 @@ class EloquentRepositoryTest extends DBTestCase
 
     public function seedUsers()
     {
-        $this->artisan->call('db:seed', [
+        Artisan::call('db:seed', [
             '--class' => FilterDataSeeder::class
         ]);
     }
@@ -82,7 +83,7 @@ class EloquentRepositoryTest extends DBTestCase
 
     public function testItFirstReturnsNullWhenTheQueryHasNoResults()
     {
-        $model = new class() extends User {
+        $model = new class () extends User {
             public static function query()
             {
                 return \Mockery::mock(parent::query())
@@ -97,7 +98,7 @@ class EloquentRepositoryTest extends DBTestCase
 
     public function testItFailsWhenFirstOrFailQueryHasNoResults()
     {
-        $model = new class() extends User {
+        $model = new class () extends User {
             public static function query()
             {
                 return \Mockery::mock(parent::query())
