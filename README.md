@@ -159,7 +159,7 @@ Tokens and usage:
 |   `NULL`   |          Field is null          |         `https://api.yourdomain.com/1.0/users?filters[address]=NULL`          |
 | `NOT_NULL` |        Field is not null        |        `https://api.yourdomain.com/1.0/users?filters[email]=NOT_NULL`         |
 
-### Filtering relations
+### Filtering by relations
 
 Assuming we have users and their related tables resembling the following structure:
 
@@ -176,8 +176,11 @@ Assuming we have users and their related tables resembling the following structu
 ]
 ```
 
-We can filter by users' hobbies with `users?filters[profile.hobbies.name]=^Cook`. Relationships can be of arbitrary
-depth.
+We can users by their hobbies with `users?filters[profile.hobbies.name]=^Cook`. 
+
+This filter can be read as `select users with whose profile.hobbies.name begins with "Cook"`
+
+Relationships can be of arbitrary depth.
 
 ### Filter conjunctions
 
@@ -195,7 +198,7 @@ We can use `AND` and `OR` statements to build filters such as `users?filters[use
 ]
 ```
 
-and this filter can be read as `select (users with username Bobby) OR (users with username Johnny who's profile.favorite_cheese attribute is Gouda)`.
+and this filter can be read as `select (users with username Bobby) OR (users with username Johnny whose profile.favorite_cheese attribute is Gouda)`.
 
 ## Model Setup
 
