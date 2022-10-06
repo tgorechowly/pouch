@@ -3,6 +3,7 @@
 namespace Koala\Pouch\Tests;
 
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Schema;
 use Koala\Pouch\Contracts\AccessControl;
 use Koala\Pouch\Tests\Models\Tag;
 use Koala\Pouch\Tests\Seeds\FilterDataSeeder;
@@ -832,10 +833,12 @@ class EloquentRepositoryTest extends DBTestCase
         );
 
         $repository = $this->getRepository(User::class);
+
         $this->assertEquals($allCount = User::count(), $repository->all()->count());
 
         $repository->modify()->setFilters(['username' => '~galaxyfarfaraway.com']);
         $found_users = $repository->all();
+
         $this->assertEquals($allCount - 1, $found_users->count());
         $this->assertFalse($found_users->contains($otherUser));
 
@@ -872,6 +875,7 @@ class EloquentRepositoryTest extends DBTestCase
         );
 
         $repository = $this->getRepository(User::class);
+
         $this->assertEquals($allCount = User::count(), $repository->all()->count());
 
         $repository->modify()->setFilters(['username' => '~galaxyfarfaraway.com']);
@@ -1496,6 +1500,42 @@ class EloquentRepositoryTest extends DBTestCase
         $this->assertTrue($this->getRepository(User::class, $manyOperationData)->isManyOperation());
     }
 
+    public function testItCanFindASimpleModelAndPickASubsetOfColumns()
+    {
+        $this->seedUsers();
+        $repo = $this->getRepository(User::class);
+        $user = $repo->findOrFail(1);
+
+        $repo->modify()->addPicks(['id', 'username']);
+
+        $userWithPicks = $repo->findOrFail(1);
+        //Eloquent models that were loaded with a subset of columns will only have those attributes set
+        $this->assertEquals(['id', 'username'], array_keys($userWithPicks->getAttributes()));
+
+
+        $repo->modify()->addPick('occupation');
+
+        $repo->modify()->setEagerLoads(['posts']);
+        $userWithMorePicksAndEagerLoad = $repo->findOrFail(1);
+        //Only picked columns yield attributes
+        $this->assertEquals(['id', 'username', 'occupation'], array_keys($userWithMorePicksAndEagerLoad->getAttributes()));
+
+        $this->assertEqualsCanonicalizing(Schema::getColumnListing($user->getTable()), array_keys($user->getAttributes()));
+
+        //Assert that posts have been eager loaded in addition to picked attributes
+        $this->assertArrayHasKey('posts', $userWithMorePicksAndEagerLoad->toArray());
+        $this->assertNotEmpty($userWithMorePicksAndEagerLoad->posts);
+    }
+
+    public function testItOnlyPicksASubsetOfColumnsThatExistOnTheResourceModel()
+    {
+        $this->seedUsers();
+        $repo = $this->getRepository(User::class);
+        $repo->modify()->setPicks(['id', 'username', 'notinthismodel']);
+
+        $this->assertEqualsCanonicalizing(['id', 'username'], array_keys($repo->firstOrFail()->getAttributes()));
+    }
+
     public function sortDirectionProvider()
     {
         return [['asc'], ['desc']];
@@ -1505,7 +1545,7 @@ class EloquentRepositoryTest extends DBTestCase
     {
         $valueToAvoid = $direction == 'desc' ? -1 : 1;
         $collection->sliding(2)->eachSpread(function ($previous, $current) use ($valueToAvoid, $direction) {
-            $word = $valueToAvoid == -1 ? 'after' : 'before';
+            $word    = $valueToAvoid == -1 ? 'after' : 'before';
             $message = "Failed asserting that the collection is sorted in $direction order. $previous does not come $word to $current.";
             $this->assertNotEquals($valueToAvoid, $previous <=> $current, $message);
         });

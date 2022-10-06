@@ -66,6 +66,7 @@ class RepositoryMiddleware
         $repository->setModelClass($model_class)->setInput($input);
 
         $repository->modify()
+            ->setPicks($this->parsePickQueryParameter($request))
             ->setFilters((array) $request->get('filters'))
             ->setSortOrder((array) $request->get('sort'))
             ->setGroupBy((array) $request->get('group'))
@@ -75,5 +76,21 @@ class RepositoryMiddleware
         $repository->accessControl()->setDepthRestriction(config('pouch.eager_load_depth'));
 
         return $repository;
+    }
+
+    protected function parsePickQueryParameter(Request $request): array
+    {
+        $pick = $request->get('pick');
+        if (is_array($pick)) {
+            return $pick;
+        } elseif (isset($pick) && is_string($pick) && strlen($pick)) {
+            //Clean up comma separated pick list and explode it into an array
+            return array_filter(
+                explode(',', str_replace(' ', '', $pick)),
+                'strlen'
+            );
+        } else {
+            return [];
+        }
     }
 }

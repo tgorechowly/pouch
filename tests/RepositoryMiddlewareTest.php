@@ -10,6 +10,7 @@ use Koala\Pouch\Providers\RepositoryServiceProvider;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Route;
+use Koala\Pouch\Tests\Models\User;
 use Mockery;
 
 class RepositoryMiddlewareTest extends TestCase
@@ -46,6 +47,7 @@ class RepositoryMiddlewareTest extends TestCase
         $request->shouldReceive('get')->with('group')->once()->andReturn([]);
         $request->shouldReceive('get')->with('include')->once()->andReturn([]);
         $request->shouldReceive('get')->with('aggregate')->once()->andReturn([]);
+        $request->shouldReceive('get')->with('pick')->once()->andReturn([]);
 
         $middleware = new RepositoryMiddleware();
         $repository = $middleware->buildRepository($request);
@@ -72,6 +74,7 @@ class RepositoryMiddlewareTest extends TestCase
         $request->shouldReceive('get')->with('group')->once()->andReturn([]);
         $request->shouldReceive('get')->with('include')->once()->andReturn([]);
         $request->shouldReceive('get')->with('aggregate')->once()->andReturn([]);
+        $request->shouldReceive('get')->with('pick')->once()->andReturn([]);
 
         $middleware = new RepositoryMiddleware();
         $repository = $middleware->buildRepository($request);
@@ -104,6 +107,7 @@ class RepositoryMiddlewareTest extends TestCase
         $request->shouldReceive('get')->with('group')->once()->andReturn([]);
         $request->shouldReceive('get')->with('include')->once()->andReturn([]);
         $request->shouldReceive('get')->with('aggregate')->once()->andReturn([]);
+        $request->shouldReceive('get')->with('pick')->once()->andReturn([]);
 
         $middleware = new RepositoryMiddleware();
         $repository = $middleware->buildRepository($request);
@@ -146,6 +150,7 @@ class RepositoryMiddlewareTest extends TestCase
         $request->shouldReceive('get')->with('aggregate')->once()->andReturn([
             'foo' => 'aggregate',
         ]);
+        $request->shouldReceive('get')->with('pick')->once()->andReturn([]);
 
         $middleware = new RepositoryMiddleware();
         $repository = $middleware->buildRepository($request);
@@ -160,6 +165,91 @@ class RepositoryMiddlewareTest extends TestCase
         $this->assertSame(['foo' => 'group'], $repository->modify()->getGroupBy());
         $this->assertSame(['foo' => 'include'], $repository->modify()->getEagerLoads());
         $this->assertSame(['foo' => 'aggregate'], $repository->modify()->getAggregate());
+    }
+
+    public function testItBuildsARepositoryFromARequestAndSetsPicks()
+    {
+        $request = Mockery::mock(Request::class);
+        $route   = Mockery::mock(Route::class);
+
+        $request->shouldReceive('route')->once()->andReturn($route);
+
+        ModelResolver::shouldReceive('resolveModelClass')->once()->andReturn(RepositoryMiddlewareTestStubModel::class);
+
+        $route->shouldReceive('parametersWithoutNulls')->once()->andReturn(['857']);
+
+        $request->shouldReceive('method')->once()->andReturn('GET');
+
+        $request->shouldReceive('get')->with('filters')->once()->andReturn([
+            'foo' => 'filters',
+        ]);
+        $request->shouldReceive('get')->with('sort')->once()->andReturn([
+            'foo' => 'sort',
+        ]);
+        $request->shouldReceive('get')->with('group')->once()->andReturn([
+            'foo' => 'group',
+        ]);
+        $request->shouldReceive('get')->with('include')->once()->andReturn([
+            'foo' => 'include',
+        ]);
+        $request->shouldReceive('get')->with('aggregate')->once()->andReturn([
+            'foo' => 'aggregate',
+        ]);
+        $request->shouldReceive('get')->with('pick')->once()->andReturn([
+           'foo', 'bar', 'baz', 'yar', 'derp'
+        ]);
+
+        $middleware = new RepositoryMiddleware();
+        $repository = $middleware->buildRepository($request);
+
+        $this->assertTrue($repository instanceof EloquentRepository);
+        $this->assertSame($repository->getModelClass(), RepositoryMiddlewareTestStubModel::class);
+
+        $this->assertSame('857', $repository->getInputId());
+
+        $this->assertSame(['foo' => 'filters'], $repository->modify()->getFilters());
+        $this->assertSame(['foo' => 'sort'], $repository->modify()->getSortOrder());
+        $this->assertSame(['foo' => 'group'], $repository->modify()->getGroupBy());
+        $this->assertSame(['foo' => 'include'], $repository->modify()->getEagerLoads());
+        $this->assertSame(['foo' => 'aggregate'], $repository->modify()->getAggregate());
+        $this->assertSame(['foo', 'bar', 'baz', 'yar', 'derp'], $repository->modify()->getPicks());
+    }
+
+    /**
+     * @dataProvider pickAndExpectedResultProvider
+     */
+    public function testItCanAcceptPicksFromRequest($input, $expectedPicks)
+    {
+        $middleware = new RepositoryMiddleware();
+        $request    = Request::create('/users', 'GET', ['pick' => $input]);
+        $route      = new Route('GET', $request->getUri(), ['uses' => fn () => null, 'resource' => User::class]);
+
+        $route->bind($request);
+        $request->setRouteResolver(fn () => $route);
+
+        $repository = $middleware->buildRepository($request);
+
+        $this->assertEquals($expectedPicks, $repository->modify()->getPicks());
+    }
+
+    public function pickAndExpectedResultProvider()
+    {
+        return [
+            //?pick=a,b,c
+            ['a,b,c', ['a', 'b', 'c']],
+            ['a ,b, c', ['a', 'b', 'c']],
+            ['a ,b,', ['a', 'b']],
+            ['a', ['a']],
+            ['0,1,2', ['0', '1', '2']],
+            ['0', ['0']],
+            [null, []],
+            [['a', 'b'], ['a', 'b']],
+            ['', []],
+            //?pick[]=a&pick[]=b&pick[]=c
+            [['a', 'b', 'c'], ['a', 'b', 'c']],
+            [['0','1','2'], ['0', '1', '2']],
+            [[0, 1, 2], ['0', '1', '2']],
+        ];
     }
 }
 
