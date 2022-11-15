@@ -2,6 +2,8 @@
 
 namespace Koala\Pouch;
 
+use Illuminate\Pipeline\Pipeline;
+use Illuminate\Support\Facades\App;
 use Koala\Pouch\Contracts\AccessControl;
 use Koala\Pouch\Contracts\QueryFilterContainer;
 use Koala\Pouch\Contracts\QueryModifier;
@@ -264,7 +266,7 @@ class EloquentRepository implements Repository
      */
     public function find($id)
     {
-        return $this->query()->find($id);
+        return $this->transformModelForVisibility($this->query()->find($id));
     }
 
     /**
@@ -275,17 +277,17 @@ class EloquentRepository implements Repository
      */
     public function findOrFail($id): Model
     {
-        return $this->query()->findOrFail($id);
+        return $this->transformModelForVisibility($this->query()->findOrFail($id));
     }
-
     /**
+
      * Get all elements against the base query.
      *
      * @return \Illuminate\Database\Eloquent\Collection
      */
     public function all(): Collection
     {
-        return $this->query()->get();
+        return $this->query()->get()->transform(fn ($model) => $this->transformModelForVisibility($model));
     }
 
     /**
@@ -296,7 +298,11 @@ class EloquentRepository implements Repository
      */
     public function paginate($per_page): Paginator
     {
-        return $this->query()->paginate($per_page);
+        $paginator = $this->query()->paginate($per_page);
+        //Modify attribute visibility for all models in the collection
+        $paginator->getCollection()->transform(fn ($model) => $this->transformModelForVisibility($model));
+
+        return $paginator;
     }
 
     /**
@@ -622,8 +628,6 @@ class EloquentRepository implements Repository
         return ($this->getInput() && array_keys($this->getInput()) === range(0, count($this->getInput()) - 1));
     }
 
-
-
     /**
      * A helper method for backwards compatibility.
      *
@@ -645,7 +649,7 @@ class EloquentRepository implements Repository
      */
     public function first(): ?Model
     {
-        return $this->query()->first();
+        return $this->transformModelForVisibility($this->query()->first());
     }
 
     /**
@@ -656,6 +660,26 @@ class EloquentRepository implements Repository
      */
     public function firstOrFail(): Model
     {
-        return $this->query()->firstOrFail();
+        return $this->transformModelForVisibility($this->query()->firstOrFail());
+    }
+
+    protected function transformModelForVisibility(?Model $model): ?Model
+    {
+        if (is_null($model)) {
+            return null;
+        }
+
+        if (empty($this->modify()->getPicks())) {
+            return $model;
+        }
+
+        $visibleModelAttributeNames       = array_unique(array_merge($model->getVisible(), array_keys($model->toArray())));
+        $pickedVisibleModelAttributeNames = array_intersect(array_merge($this->modify()->getEagerLoads(), $this->modify()->getPicks()), $visibleModelAttributeNames);
+
+        //Make all fields other than picked and includes hidden
+        $model->setHidden($visibleModelAttributeNames);
+        $model->makeVisible($pickedVisibleModelAttributeNames);
+
+        return $model;
     }
 }
