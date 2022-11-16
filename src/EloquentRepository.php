@@ -676,8 +676,8 @@ class EloquentRepository implements Repository
         $visibleModelAttributeNames       = array_unique(array_merge($model->getVisible(), array_keys($model->toArray())));
         $pickedVisibleModelAttributeNames = array_intersect(array_merge($this->modify()->getEagerLoads(), $this->modify()->getPicks()), $visibleModelAttributeNames);
 
-        //Make all fields other than picked and includes hidden
-        $model->setHidden($visibleModelAttributeNames);
+        //Hide all fields other than picked and includes, unless they were already hidden
+        $model->setHidden(array_merge($model->getHidden(), $visibleModelAttributeNames));
         $model->makeVisible($pickedVisibleModelAttributeNames);
 
         return $model;

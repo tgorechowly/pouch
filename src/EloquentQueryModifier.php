@@ -392,11 +392,12 @@ class EloquentQueryModifier implements QueryModifier
         }
 
         // Make a mock instance so we can describe its columns
+        /** @var Model $temp_instance */
         $temp_instance = new $model_class();
         $columns       = $this->getFields($temp_instance);
 
-        if ($picks_exist) {
-            $this->query()->select(array_intersect($columns, $this->picks));
+        if ($picks_exist && !empty($picksThatMatchColumns = array_intersect($columns, $this->picks))) {
+            $this->query()->select($picksThatMatchColumns);
         }
 
         if ($filters_exist) {
